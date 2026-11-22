@@ -19,7 +19,9 @@ Everything is set in the app's own settings (tabs on top): position, size, style
 (profile 1 is "Default").
 
 ## Needs
-
+- **The M cluster layout must be enabled on the instrument cluster** (e.g. coded with BimmerCode). The app is made for
+  that layout: its widgets go where the M layout leaves room, and on the stock PHEV layout they overlap the car's own.
+  
 - A rooted MGU (ID7) with custom apps from [idrive7-apps](https://github.com/cauliflowermossgrape/idrive7-apps)
 - The cluster renderer (cluster-render) that the idrive7-apps kit installs: the widgets are layers on the cluster
 - For the song: the car's media sources (works with Android Auto / CarPlay as the car shows them)
