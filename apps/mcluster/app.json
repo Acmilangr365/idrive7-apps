@@ -1,0 +1,639 @@
+{
+  "id": "mcluster",
+  "title": "M Cluster",
+  "description": "Puts the charge gauge and the drive-mode label back on the M cluster layout of a plug-in hybrid: the stock gauge's shape at the bottom right, filled from the car's own charge reading, and the mode below it, with an estimate of the electric range learned from how the car is driven.",
+  "version": "0.9.52",
+  "vendor": "custom",
+  "loggingId": "OAB1",
+  "iconGlyph": "battery",
+  "mguHmi": [
+    "ID7"
+  ],
+  "autostart": true,
+  "signals": {
+    "de.bmw.infotainment.drivingexcitement.Efficiencytainment2": {
+      "_optional": "the charge gauge: without it the gauge stays empty",
+      "statusChargeOfBatteryHybrid": "rs",
+      "statusPowerRelativHybrid": "rs"
+    },
+    "de.bmw.infotainment.drivingexcitement.FES": {
+      "_optional": "the drive-mode label",
+      "statusFESVehicleDynamicSwitchHMI": "rs"
+    },
+    "de.bmw.infotainment.climate.Climate2": {
+      "_optional": "the A/C compressor's power, part of the consumption while standing",
+      "statusActualValuePowerACCompressor": "rs"
+    },
+    "de.bmw.infotainment.vehicle.Vehicle2": {
+      "_optional": "the range estimate: distance comes from the speed",
+      "statusCarSpeed2": "rs"
+    },
+    "de.bmw.infrastructure.VehicleCondition": {
+      "_optional": "the car switched off: the layers are dropped",
+      "VehicleCondition": "s"
+    },
+    "de.bmw.infotainment.KombiIF": {
+      "_optional": "the trip distance and the average electric consumption the stock widget shows",
+      "statusBordcomputerTravelData": "rs",
+      "statusConsumptionAverageElectricVehicle": "rs",
+      "statusRangeTankStatus": "rs",
+      "statusBordcomputerAverage": "rs",
+      "statusDisplayElectricalPowerDistribution": "rs",
+      "statusBordcomputerElectricData": "rs",
+      "statusBordcomputerStatus2": "rs",
+      "statusBordcomputerTravelStart": "rs"
+    },
+    "de.bmw.infotainment.resetlogic.ResetLogic": {
+      "_optional": "the car's own consumption figures (l/100km, kWh/100km), logged to learn their scales",
+      "currentConsumption": "rs",
+      "averageConsumption": "rs"
+    },
+    "de.bmw.infotainment.vehicle.CDS2": {
+      "_optional": "the engine's fuel injection counter: the fuel used now",
+      "statusInjectionVolume": "rs"
+    },
+    "de.bmw.infotainment.vehicle.CDS": "*",
+    "de.bmw.infotainment.controlelements.FrontCCU": {
+      "_optional": "the iDrive knob tilted down switches between the trip, the song, and the song with the consumption",
+      "statusRotaryEncoderState": "rs"
+    },
+    "de.bmw.infotainment.entertainment.mediaplayer.MediaPlayer": "*",
+    "de.bmw.infotainment.hmi.hmimediastate.HmiMediaState": "*",
+    "de.bmw.infotainment.entertainment.dynamicmediaplayer.DynamicMediaPlayer": "*",
+    "de.bmw.infotainment.a4a.carplay.CarPlayManager": "*",
+    "de.bmw.infotainment.sdi.aap.androidautoprojectedmanager.AndroidAutoProjectedManager": "*",
+    "de.bmw.infrastructure.MileageSupreme": "*",
+    "de.bmw.infrastructure.SecureMileage": "*",
+    "de.bmw.infotainment.misc.MDrive": "*",
+    "de.bmw.infrastructure.VehicleInformation": "*"
+  },
+  "screens": [
+    {
+      "name": "MAIN",
+      "kind": "canvas",
+      "title": "M Cluster",
+      "buttons": [
+        [
+          "BTN_SETTINGS",
+          "Settings"
+        ]
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "chargeScale",
+      "label": "Charge reading",
+      "type": "choice",
+      "default": "half",
+      "options": [
+        [
+          "half",
+          "Half a percent per step"
+        ],
+        [
+          "whole",
+          "One percent per step"
+        ],
+        [
+          "byte",
+          "Byte over 0-100"
+        ]
+      ]
+    },
+    {
+      "key": "demo",
+      "label": "Demo values",
+      "type": "choice",
+      "default": "auto",
+      "options": [
+        [
+          "auto",
+          "Only without car data"
+        ],
+        [
+          "on",
+          "Always"
+        ],
+        [
+          "off",
+          "Never"
+        ]
+      ]
+    },
+    {
+      "key": "on",
+      "label": "on",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "gauge",
+      "label": "gauge",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "label",
+      "label": "label",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "range",
+      "label": "range",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "gaugeX",
+      "label": "gaugeX",
+      "type": "number",
+      "default": 1706,
+      "hidden": true
+    },
+    {
+      "key": "gaugeY",
+      "label": "gaugeY",
+      "type": "number",
+      "default": 460,
+      "hidden": true
+    },
+    {
+      "key": "gaugeScale",
+      "label": "gaugeScale",
+      "type": "number",
+      "default": 80,
+      "hidden": true
+    },
+    {
+      "key": "gaugeDepth",
+      "label": "gaugeDepth",
+      "type": "number",
+      "default": 100,
+      "hidden": true
+    },
+    {
+      "key": "gaugeBar",
+      "label": "gaugeBar",
+      "type": "number",
+      "default": 28,
+      "hidden": true
+    },
+    {
+      "key": "pctOn",
+      "label": "pctOn",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "pctSize",
+      "label": "pctSize",
+      "type": "number",
+      "default": 100,
+      "hidden": true
+    },
+    {
+      "key": "pctDX",
+      "label": "pctDX",
+      "type": "number",
+      "default": -2,
+      "hidden": true
+    },
+    {
+      "key": "pctDY",
+      "label": "pctDY",
+      "type": "number",
+      "default": -70,
+      "hidden": true
+    },
+    {
+      "key": "labelX",
+      "label": "labelX",
+      "type": "number",
+      "default": 448,
+      "hidden": true
+    },
+    {
+      "key": "labelY",
+      "label": "labelY",
+      "type": "number",
+      "default": 244,
+      "hidden": true
+    },
+    {
+      "key": "labelScale",
+      "label": "labelScale",
+      "type": "number",
+      "default": 150,
+      "hidden": true
+    },
+    {
+      "key": "rangeX",
+      "label": "rangeX",
+      "type": "number",
+      "default": 1716,
+      "hidden": true
+    },
+    {
+      "key": "rangeY",
+      "label": "rangeY",
+      "type": "number",
+      "default": 662,
+      "hidden": true
+    },
+    {
+      "key": "rangeScale",
+      "label": "rangeScale",
+      "type": "number",
+      "default": 120,
+      "hidden": true
+    },
+    {
+      "key": "cons",
+      "label": "cons",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "consX",
+      "label": "consX",
+      "type": "number",
+      "default": 1282,
+      "hidden": true
+    },
+    {
+      "key": "consY",
+      "label": "consY",
+      "type": "number",
+      "default": 186,
+      "hidden": true
+    },
+    {
+      "key": "consScale",
+      "label": "consScale",
+      "type": "number",
+      "default": 44,
+      "hidden": true
+    },
+    {
+      "key": "gaugeFont",
+      "label": "gaugeFont",
+      "type": "choice",
+      "default": "m",
+      "hidden": true
+    },
+    {
+      "key": "labelFont",
+      "label": "labelFont",
+      "type": "choice",
+      "default": "m",
+      "hidden": true
+    },
+    {
+      "key": "rangeFont",
+      "label": "rangeFont",
+      "type": "choice",
+      "default": "simple",
+      "hidden": true
+    },
+    {
+      "key": "consFont",
+      "label": "consFont",
+      "type": "choice",
+      "default": "m",
+      "hidden": true
+    },
+    {
+      "key": "tripFont",
+      "label": "tripFont",
+      "type": "choice",
+      "default": "m",
+      "hidden": true
+    },
+    {
+      "key": "sportRed",
+      "label": "sportRed",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "consText",
+      "label": "consText",
+      "type": "number",
+      "default": 80,
+      "hidden": true
+    },
+    {
+      "key": "consStyle",
+      "label": "consStyle",
+      "type": "choice",
+      "default": "oem",
+      "hidden": true
+    },
+    {
+      "key": "trip",
+      "label": "trip",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "tripX",
+      "label": "tripX",
+      "type": "number",
+      "default": 1250,
+      "hidden": true
+    },
+    {
+      "key": "tripY",
+      "label": "tripY",
+      "type": "number",
+      "default": 470,
+      "hidden": true
+    },
+    {
+      "key": "tripScale",
+      "label": "tripScale",
+      "type": "number",
+      "default": 100,
+      "hidden": true
+    },
+    {
+      "key": "step",
+      "label": "step",
+      "type": "number",
+      "default": 10,
+      "hidden": true
+    },
+    {
+      "key": "col_ELECTRIC",
+      "label": "col_ELECTRIC",
+      "type": "choice",
+      "default": "#2bb8ea",
+      "hidden": true
+    },
+    {
+      "key": "col_ELECTRIC_IND",
+      "label": "col_ELECTRIC_IND",
+      "type": "choice",
+      "default": "#00aae6",
+      "hidden": true
+    },
+    {
+      "key": "col_HYBRID",
+      "label": "col_HYBRID",
+      "type": "choice",
+      "default": "#b4b9bf",
+      "hidden": true
+    },
+    {
+      "key": "col_BATTERY",
+      "label": "col_BATTERY",
+      "type": "choice",
+      "default": "#2bb8ea",
+      "hidden": true
+    },
+    {
+      "key": "col_SPORT",
+      "label": "col_SPORT",
+      "type": "choice",
+      "default": "#e0262a",
+      "hidden": true
+    },
+    {
+      "key": "col_SPORT_IND",
+      "label": "col_SPORT_IND",
+      "type": "choice",
+      "default": "#b4b9bf",
+      "hidden": true
+    },
+    {
+      "key": "col_BOOST",
+      "label": "col_BOOST",
+      "type": "choice",
+      "default": "#e0262a",
+      "hidden": true
+    },
+    {
+      "key": "col_OTHER",
+      "label": "col_OTHER",
+      "type": "choice",
+      "default": "bmw_blue",
+      "hidden": true
+    },
+    {
+      "key": "gaugeStyle",
+      "label": "gaugeStyle",
+      "type": "choice",
+      "default": "classic",
+      "hidden": true
+    },
+    {
+      "key": "ringX",
+      "label": "ringX",
+      "type": "number",
+      "default": 1728,
+      "hidden": true
+    },
+    {
+      "key": "ringY",
+      "label": "ringY",
+      "type": "number",
+      "default": 460,
+      "hidden": true
+    },
+    {
+      "key": "ringScale",
+      "label": "ringScale",
+      "type": "number",
+      "default": 80,
+      "hidden": true
+    },
+    {
+      "key": "cellX",
+      "label": "cellX",
+      "type": "number",
+      "default": 1740,
+      "hidden": true
+    },
+    {
+      "key": "cellY",
+      "label": "cellY",
+      "type": "number",
+      "default": 460,
+      "hidden": true
+    },
+    {
+      "key": "cellScale",
+      "label": "cellScale",
+      "type": "number",
+      "default": 75,
+      "hidden": true
+    },
+    {
+      "key": "stripesX",
+      "label": "stripesX",
+      "type": "number",
+      "default": 1690,
+      "hidden": true
+    },
+    {
+      "key": "stripesY",
+      "label": "stripesY",
+      "type": "number",
+      "default": 440,
+      "hidden": true
+    },
+    {
+      "key": "stripesScale",
+      "label": "stripesScale",
+      "type": "number",
+      "default": 80,
+      "hidden": true
+    },
+    {
+      "key": "music",
+      "label": "music",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "musicX",
+      "label": "musicX",
+      "type": "number",
+      "default": 714,
+      "hidden": true
+    },
+    {
+      "key": "musicY",
+      "label": "musicY",
+      "type": "number",
+      "default": 159,
+      "hidden": true
+    },
+    {
+      "key": "musicScale",
+      "label": "musicScale",
+      "type": "number",
+      "default": 140,
+      "hidden": true
+    },
+    {
+      "key": "musicText",
+      "label": "musicText",
+      "type": "number",
+      "default": 90,
+      "hidden": true
+    },
+    {
+      "key": "gear",
+      "label": "gear",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "gearX",
+      "label": "gearX",
+      "type": "number",
+      "default": 832,
+      "hidden": true
+    },
+    {
+      "key": "gearY",
+      "label": "gearY",
+      "type": "number",
+      "default": 344,
+      "hidden": true
+    },
+    {
+      "key": "gearScale",
+      "label": "gearScale",
+      "type": "number",
+      "default": 160,
+      "hidden": true
+    },
+    {
+      "key": "units",
+      "label": "units",
+      "type": "choice",
+      "default": "eu",
+      "hidden": true
+    },
+    {
+      "key": "music1X",
+      "label": "music1X",
+      "type": "number",
+      "default": 1280,
+      "hidden": true
+    },
+    {
+      "key": "music1Y",
+      "label": "music1Y",
+      "type": "number",
+      "default": 186,
+      "hidden": true
+    },
+    {
+      "key": "music1Scale",
+      "label": "music1Scale",
+      "type": "number",
+      "default": 100,
+      "hidden": true
+    },
+    {
+      "key": "musicMoving",
+      "label": "musicMoving",
+      "type": "bool",
+      "default": true,
+      "hidden": true
+    },
+    {
+      "key": "odoX",
+      "label": "odoX",
+      "type": "number",
+      "default": 1250,
+      "hidden": true
+    },
+    {
+      "key": "odoY",
+      "label": "odoY",
+      "type": "number",
+      "default": 186,
+      "hidden": true
+    },
+    {
+      "key": "odoScale",
+      "label": "odoScale",
+      "type": "number",
+      "default": 100,
+      "hidden": true
+    },
+    {
+      "key": "lang",
+      "label": "lang",
+      "type": "choice",
+      "default": "en",
+      "options": [
+        [
+          "en",
+          "English"
+        ],
+        [
+          "el",
+          "Ελληνικά"
+        ]
+      ],
+      "hidden": true
+    }
+  ]
+}
