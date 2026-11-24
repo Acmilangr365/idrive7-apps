@@ -1,0 +1,53 @@
+name: M Cluster Link (phone app)
+
+# Builds the phone app (companion/mcluster-link) and puts the APK on a release, ready to download on the phone.
+on:
+  push:
+    paths:
+      - 'companion/mcluster-link/**'
+      - '.github/workflows/mcluster-link.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: companion/mcluster-link
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Spotify App Remote SDK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/libs
+          gh release download -R spotify/android-sdk --pattern '*app-remote*.aar' -D app/libs || true
+          if ! ls app/libs/*.aar >/dev/null 2>&1; then
+            git clone --depth 1 https://github.com/spotify/android-sdk.git /tmp/spsdk
+            find /tmp/spsdk -name '*app-remote*.aar' -exec cp {} app/libs/ \;
+          fi
+          ls -l app/libs
+          ls app/libs/*.aar
+      - name: Build
+        run: gradle --no-daemon assembleRelease
+      - name: Signing fingerprint (for the Spotify dashboard)
+        run: keytool -list -v -keystore mcluster-link.jks -storepass mclusterlink | grep -E 'SHA1|SHA256'
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk MClusterLink.apk
+          gh release create "mcluster-link-${{ github.run_number }}" MClusterLink.apk \
+            --target "${{ github.sha }}" --prerelease \
+            --title "M Cluster Link ${{ github.run_number }}" \
+            --notes "Phone app for M Cluster: your Spotify lists on the iDrive. Download MClusterLink.apk on the phone and install it."
