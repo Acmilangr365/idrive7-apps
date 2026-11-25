@@ -161,7 +161,9 @@ class LinkService : Service() {
                 when (path) {
                     "/ping" -> json(out, JSONObject().put("ok", true).put("spotify", spotifyOk()).put("error", spotifyError ?: ""))
                     "/browse" -> json(out, browse(q["key"] ?: "root", (q["offset"] ?: "0").toIntOrNull() ?: 0, q["item"] ?: ""))
-                    "/play" -> json(out, play(q["item"] ?: ""))
+                    "/play" -> json(out, play(q["item"] ?: "", q["ctx"] ?: "", (q["index"] ?: "").toIntOrNull() ?: -1))
+                    "/next" -> json(out, skip(true))
+                    "/prev" -> json(out, skip(false))
                     "/img" -> {
                         val b = picture(q["key"] ?: "")
                         if (b == null) reply(out, 404, "text/plain", "no picture".toByteArray()) else reply(out, 200, "image/jpeg", b)
@@ -221,11 +223,27 @@ class LinkService : Service() {
         return res.put("total", items.total).put("items", arr)
     }
 
-    private fun play(itemJson: String): JSONObject {
+    /** Plays an item; with ctx (its list's uri) and index, the song at that place of the list, so next / previous follow the list. */
+    private fun play(itemJson: String, ctx: String, index: Int): JSONObject {
         val r = remote
         if (r == null || !r.isConnected || itemJson.isEmpty()) return JSONObject().put("ok", false)
         val li = toItem(JSONObject(itemJson))
-        main.post { if (li.playable) r.contentApi.playContentItem(li) else r.playerApi.play(li.uri) }
+        main.post {
+            if (ctx.isNotEmpty() && index >= 0) {
+                r.playerApi.skipToIndex(ctx, index).setErrorCallback {
+                    // the list could not be played from there: the song alone
+                    if (li.playable) r.contentApi.playContentItem(li) else r.playerApi.play(li.uri)
+                }
+            } else if (li.playable) r.contentApi.playContentItem(li) else r.playerApi.play(li.uri)
+        }
+        return JSONObject().put("ok", true)
+    }
+
+    /** Next (true) or previous song, in Spotify itself. */
+    private fun skip(next: Boolean): JSONObject {
+        val r = remote
+        if (r == null || !r.isConnected) return JSONObject().put("ok", false)
+        main.post { if (next) r.playerApi.skipNext() else r.playerApi.skipPrevious() }
         return JSONObject().put("ok", true)
     }
 

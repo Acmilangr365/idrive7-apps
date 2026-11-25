@@ -53,8 +53,8 @@ class MainActivity : Activity() {
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
             }
-            authorise(cid.text.toString().trim())
-            startForegroundService(Intent(this, LinkService::class.java))
+            // Spotify's permission first; the link starts once it is given (or at once when it was given before)
+            authorise(cid.text.toString().trim()) { startForegroundService(Intent(this, LinkService::class.java)) }
         }
         stop.setOnClickListener { stopService(Intent(this, LinkService::class.java)) }
         listOf(
@@ -68,13 +68,14 @@ class MainActivity : Activity() {
     }
 
     /** Spotify's one-time permission screen needs an activity: connect once from here, then let the service go on. */
-    private fun authorise(id: String) {
-        if (id.isEmpty()) return
+    private fun authorise(id: String, then: () -> Unit) {
+        if (id.isEmpty()) { then(); return }
         val params = ConnectionParams.Builder(id).setRedirectUri(LinkService.REDIRECT).showAuthView(true).build()
         SpotifyAppRemote.connect(this, params, object : Connector.ConnectionListener {
             override fun onConnected(r: SpotifyAppRemote) {
                 SpotifyAppRemote.disconnect(r)
                 LinkService.spotifyError = null
+                then()
             }
 
             override fun onFailure(t: Throwable) {
